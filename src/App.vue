@@ -1,9 +1,18 @@
 <script setup>
 import { ref, computed, onUnmounted } from "vue";
 
-const WORK_TIME = 25 * 60; // 25 minutes in seconds
-const timeLeft = ref(WORK_TIME);
+const DEFAULT_WORK_TIME = 25;
+const DEFAULT_BREAK_TIME = 5;
+
+const workTime = ref(DEFAULT_WORK_TIME);
+const breakTime = ref(DEFAULT_BREAK_TIME);
+const timeLeft = ref(workTime.value * 60);
 const isRunning = ref(false);
+const isWorkMode = ref(true);
+const showSettings = ref(false);
+const showNotification = ref(false);
+const notificationMessage = ref("");
+
 let timerInterval = null;
 
 const formattedTime = computed(() => {
@@ -12,8 +21,16 @@ const formattedTime = computed(() => {
   return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 });
 
+const currentTotalTime = computed(() => {
+  return isWorkMode.value ? workTime.value * 60 : breakTime.value * 60;
+});
+
 const progressPercent = computed(() => {
-  return (timeLeft.value / WORK_TIME) * 100;
+  return (timeLeft.value / currentTotalTime.value) * 100;
+});
+
+const modeLabel = computed(() => {
+  return isWorkMode.value ? "Work" : "Break";
 });
 
 const startTimer = () => {
@@ -23,10 +40,22 @@ const startTimer = () => {
     if (timeLeft.value > 0) {
       timeLeft.value--;
     } else {
-      pauseTimer();
-      alert("Time Is Up!");
+      handleTimerComplete();
     }
   }, 1000);
+};
+
+const handleTimerComplete = () => {
+  pauseTimer();
+  const message = isWorkMode.value
+    ? "Work session complete! Time for a break."
+    : "Break is over! Ready to work?";
+  notificationMessage.value = message;
+  showNotification.value = true;
+
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("Pomodoro Timer", { body: message });
+  }
 };
 
 const pauseTimer = () => {
@@ -36,8 +65,30 @@ const pauseTimer = () => {
 
 const resetTimer = () => {
   pauseTimer();
-  timeLeft.value = WORK_TIME;
+  timeLeft.value = currentTotalTime.value;
 };
+
+const switchMode = () => {
+  pauseTimer();
+  isWorkMode.value = !isWorkMode.value;
+  timeLeft.value = currentTotalTime.value;
+};
+
+const saveSettings = () => {
+  pauseTimer();
+  timeLeft.value = currentTotalTime.value;
+  showSettings.value = false;
+};
+
+const closeNotification = () => {
+  showNotification.value = false;
+  switchMode();
+};
+
+// Request notification permission on mount
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
 
 onUnmounted(() => {
   clearInterval(timerInterval);
@@ -48,7 +99,7 @@ onUnmounted(() => {
   <main class="app-wrapper">
     <div class="pomodoro-card">
       <header>
-        <h1>Pomodoro</h1>
+        <h1>{{ modeLabel }}</h1>
       </header>
 
       <div class="timer-circle">
@@ -63,6 +114,7 @@ onUnmounted(() => {
           />
           <circle
             class="progress-ring_circle"
+            :class="{ 'break-mode': !isWorkMode }"
             stroke-width="8"
             fill="transparent"
             r="110"
@@ -118,7 +170,11 @@ onUnmounted(() => {
           </svg>
         </button>
 
-        <button class="btn btn-icon disabled" title="Settings">
+        <button
+          class="btn btn-icon"
+          @click="showSettings = true"
+          title="Settings"
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -132,6 +188,53 @@ onUnmounted(() => {
               d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
             />
           </svg>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="showSettings"
+      class="modal-overlay"
+      @click.self="showSettings = false"
+    >
+      <div class="modal">
+        <h2>Settings</h2>
+        <div class="setting-item">
+          <label>Work Time (minutes)</label>
+          <input
+            type="number"
+            v-model.number="workTime"
+            min="1"
+            max="60"
+            class="setting-input"
+          />
+        </div>
+        <div class="setting-item">
+          <label>Break Time (minutes)</label>
+          <input
+            type="number"
+            v-model.number="breakTime"
+            min="1"
+            max="30"
+            class="setting-input"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" @click="showSettings = false">
+            Cancel
+          </button>
+          <button class="btn btn-primary" @click="saveSettings">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div v-if="showNotification" class="modal-overlay">
+      <div class="modal notification-modal">
+        <h2>Time's Up!</h2>
+        <p>{{ notificationMessage }}</p>
+        <button class="btn btn-primary" @click="closeNotification">
+          Continue
         </button>
       </div>
     </div>
@@ -209,6 +312,10 @@ h1 {
   stroke-linecap: round;
 }
 
+.progress-ring_circle.break-mode {
+  stroke: #a6e3a1;
+}
+
 .time-display {
   position: absolute;
   font-size: 4rem;
@@ -276,13 +383,102 @@ h1 {
   height: 34px;
 }
 
-.disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.btn-primary {
+  background-color: #b4befe;
+  color: #11111b;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
 }
 
-.disabled:hover {
-  background-color: #181825;
+.btn-primary:hover {
+  background-color: #cba6f7;
+}
+
+.btn-secondary {
+  background-color: #313244;
+  color: #cdd6f4;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.btn-secondary:hover {
+  background-color: #45475a;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background-color: #1e1e2e;
+  padding: 2rem;
+  border-radius: 24px;
+  border: 1px solid #313244;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.modal h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  color: #cdd6f4;
+}
+
+.setting-item {
+  margin-bottom: 1.5rem;
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 0.5rem;
   color: #a6adc8;
+  font-size: 0.9rem;
+}
+
+.setting-input {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #181825;
+  border: 1px solid #313244;
+  border-radius: 12px;
+  color: #cdd6f4;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: #b4befe;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.notification-modal {
+  text-align: center;
+  max-width: 320px;
+}
+
+.notification-modal p {
+  color: #a6adc8;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
 }
 </style>
