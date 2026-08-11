@@ -136,7 +136,10 @@ onUnmounted(() => {
             r="140"
             cx="150"
             cy="150"
-            :style="{ strokeDashoffset: 880 - (880 * progressPercent) / 100 }"
+            :style="{
+              strokeDashoffset: 880 - (880 * progressPercent) / 100,
+              transition: isRunning ? 'stroke-dashoffset 1s linear' : 'none',
+            }"
           />
         </svg>
         <div class="time-display">{{ formattedTime }}</div>
@@ -245,7 +248,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Notification Modal -->
     <div v-if="showNotification" class="modal-overlay">
       <div class="modal notification-modal">
         <h2>Time's Up!</h2>
@@ -267,7 +269,6 @@ body {
 </style>
 
 <style scoped>
-/* ---------- Ambient background ---------- */
 .bg-scene {
   position: fixed;
   inset: 0;
@@ -330,7 +331,6 @@ body {
   .orb { animation: none; }
 }
 
-/* ---------- Layout ---------- */
 .app-wrapper {
   position: relative;
   z-index: 1;
@@ -347,7 +347,6 @@ body {
   color: #eef0fb;
 }
 
-/* ---------- Glass card ---------- */
 .pomodoro-card {
   position: relative;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04) 65%);
@@ -413,7 +412,6 @@ h1 {
   text-shadow: 0 0 24px rgba(166, 227, 161, 0.45);
 }
 
-/* ---------- Timer ring ---------- */
 .timer-circle {
   position: relative;
   display: flex;
@@ -433,7 +431,7 @@ h1 {
 .progress-ring_circle {
   stroke: url(#workGradient);
   stroke-dasharray: 880; /* 2 * PI * R (140) */
-  transition: stroke-dashoffset 1s linear, filter 0.6s ease;
+  transition: filter 0.6s ease;
   stroke-linecap: round;
   filter: drop-shadow(0 0 10px rgba(180, 190, 254, 0.55));
 }
@@ -457,7 +455,6 @@ h1 {
   text-shadow: 0 0 30px rgba(166, 227, 161, 0.35);
 }
 
-/* ---------- Controls ---------- */
 .controls {
   position: relative;
   display: flex;
@@ -586,7 +583,6 @@ h1 {
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* ---------- Modals ---------- */
 .modal-overlay {
   position: fixed;
   top: 0;
