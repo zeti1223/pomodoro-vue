@@ -49,7 +49,6 @@ onUnmounted(() => {
     <div class="pomodoro-card">
       <header>
         <h1>Pomodoro</h1>
-        <div class="status-dot" :class="{ active: isRunning }"></div>
       </header>
 
       <div class="timer-circle">
@@ -187,21 +186,6 @@ h1 {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #f38ba8;
-  box-shadow: 0 0 8px #f38ba8;
-  transition: all 0.3s ease;
-}
-
-.status-dot.active {
-  background-color: #a6e3a1;
-  box-shadow: 0 0 12px #a6e3a1;
-}
-
 
 .timer-circle {
   position: relative;
