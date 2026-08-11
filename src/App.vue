@@ -96,31 +96,47 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <div class="bg-scene" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+  </div>
+
   <main class="app-wrapper">
-    <div class="pomodoro-card">
+    <div class="pomodoro-card" :class="{ 'break-mode': !isWorkMode }">
       <header>
         <h1>{{ modeLabel }}</h1>
       </header>
 
       <div class="timer-circle">
-        <svg class="progress-ring" width="240" height="240">
+        <svg class="progress-ring" width="300" height="300">
+          <defs>
+            <linearGradient id="workGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#b4befe" />
+              <stop offset="100%" stop-color="#cba6f7" />
+            </linearGradient>
+            <linearGradient id="breakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#a6e3a1" />
+              <stop offset="100%" stop-color="#89dceb" />
+            </linearGradient>
+          </defs>
           <circle
             class="progress-ring_bg"
             stroke-width="8"
             fill="transparent"
-            r="110"
-            cx="120"
-            cy="120"
+            r="140"
+            cx="150"
+            cy="150"
           />
           <circle
             class="progress-ring_circle"
             :class="{ 'break-mode': !isWorkMode }"
             stroke-width="8"
             fill="transparent"
-            r="110"
-            cx="120"
-            cy="120"
-            :style="{ strokeDashoffset: 691 - (691 * progressPercent) / 100 }"
+            r="140"
+            cx="150"
+            cy="150"
+            :style="{ strokeDashoffset: 880 - (880 * progressPercent) / 100 }"
           />
         </svg>
         <div class="time-display">{{ formattedTime }}</div>
@@ -145,6 +161,7 @@ onUnmounted(() => {
           class="btn btn-main"
           @click="isRunning ? pauseTimer() : startTimer()"
         >
+          <span class="btn-main_sheen" aria-hidden="true"></span>
           <svg
             v-if="!isRunning"
             viewBox="0 0 24 24"
@@ -244,38 +261,137 @@ onUnmounted(() => {
 <style>
 body {
   margin: 0;
-  background-color: #11111b;
+  background: radial-gradient(ellipse at center, #14141f 0%, #08080e 70%);
+  overscroll-behavior: none;
 }
 </style>
 
 <style scoped>
+/* ---------- Ambient background ---------- */
+.bg-scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+.orb-a {
+  width: 480px;
+  height: 480px;
+  background: #b4befe;
+  top: -140px;
+  left: -120px;
+  animation: float-a 24s ease-in-out infinite;
+}
+
+.orb-b {
+  width: 420px;
+  height: 420px;
+  background: #cba6f7;
+  bottom: -140px;
+  right: -100px;
+  animation: float-b 28s ease-in-out infinite;
+}
+
+.orb-c {
+  width: 360px;
+  height: 360px;
+  background: #89dceb;
+  top: 45%;
+  left: 62%;
+  opacity: 0.35;
+  animation: float-c 32s ease-in-out infinite;
+}
+
+@keyframes float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(70px, 60px) scale(1.08); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-60px, -50px) scale(1.06); }
+}
+
+@keyframes float-c {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-40px, 40px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb { animation: none; }
+}
+
+/* ---------- Layout ---------- */
 .app-wrapper {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  padding: 1.5rem;
+  box-sizing: border-box;
   font-family:
     system-ui,
     -apple-system,
     sans-serif;
-  color: #cdd6f4;
+  color: #eef0fb;
 }
 
+/* ---------- Glass card ---------- */
 .pomodoro-card {
-  background-color: #1e1e2e;
+  position: relative;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04) 65%);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
   padding: 3rem 2.5rem;
-  border-radius: 32px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  border: 1px solid #313244;
+  border-radius: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 30px 60px -15px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 20px 40px -30px rgba(180, 190, 254, 0.25);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2.5rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 420px;
+  overflow: hidden;
+  transition: box-shadow 0.6s ease, border-color 0.6s ease;
+}
+
+.pomodoro-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 140%;
+  height: 90%;
+  background: radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.35), transparent 60%);
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.pomodoro-card.break-mode {
+  box-shadow:
+    0 30px 60px -15px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 20px 40px -30px rgba(166, 227, 161, 0.25);
+  border-color: rgba(166, 227, 161, 0.28);
 }
 
 header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -288,8 +404,16 @@ h1 {
   color: #b4befe;
   letter-spacing: 2px;
   text-transform: uppercase;
+  text-shadow: 0 0 24px rgba(180, 190, 254, 0.45);
+  transition: color 0.6s ease, text-shadow 0.6s ease;
 }
 
+.pomodoro-card.break-mode h1 {
+  color: #a6e3a1;
+  text-shadow: 0 0 24px rgba(166, 227, 161, 0.45);
+}
+
+/* ---------- Timer ring ---------- */
 .timer-circle {
   position: relative;
   display: flex;
@@ -299,32 +423,43 @@ h1 {
 
 .progress-ring {
   transform: rotate(-90deg);
+  overflow: visible;
 }
 
 .progress-ring_bg {
-  stroke: #313244;
+  stroke: rgba(255, 255, 255, 0.12);
 }
 
 .progress-ring_circle {
-  stroke: #b4befe;
-  stroke-dasharray: 691; /* 2 * PI * R (110) */
-  transition: stroke-dashoffset 1s linear;
+  stroke: url(#workGradient);
+  stroke-dasharray: 880; /* 2 * PI * R (140) */
+  transition: stroke-dashoffset 1s linear, filter 0.6s ease;
   stroke-linecap: round;
+  filter: drop-shadow(0 0 10px rgba(180, 190, 254, 0.55));
 }
 
 .progress-ring_circle.break-mode {
-  stroke: #a6e3a1;
+  stroke: url(#breakGradient);
+  filter: drop-shadow(0 0 10px rgba(166, 227, 161, 0.55));
 }
 
 .time-display {
   position: absolute;
-  font-size: 4rem;
+  font-size: 4.75rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: #cdd6f4;
+  color: #f4f5fc;
+  text-shadow: 0 0 30px rgba(180, 190, 254, 0.35);
+  transition: text-shadow 0.6s ease;
 }
 
+.pomodoro-card.break-mode .time-display {
+  text-shadow: 0 0 30px rgba(166, 227, 161, 0.35);
+}
+
+/* ---------- Controls ---------- */
 .controls {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -337,27 +472,37 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #a6adc8;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #d4d8f0;
 }
 
 .btn:hover {
-  color: #cdd6f4;
+  color: #ffffff;
 }
 
 .btn:active {
   transform: scale(0.92);
 }
 
+.btn:focus-visible {
+  outline: 2px solid #b4befe;
+  outline-offset: 3px;
+}
+
 .btn-icon {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background-color: #181825;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 .btn-icon:hover {
-  background-color: #313244;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .btn-icon svg {
@@ -366,105 +511,168 @@ h1 {
 }
 
 .btn-main {
+  position: relative;
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background-color: #b4befe;
-  color: #11111b !important;
-  box-shadow: 0 8px 20px rgba(180, 190, 254, 0.2);
+  background: linear-gradient(160deg, rgba(180, 190, 254, 0.92), rgba(203, 166, 247, 0.78));
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #14141f !important;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.65), 0 14px 30px rgba(180, 190, 254, 0.35);
+  overflow: hidden;
 }
 
 .btn-main:hover {
-  box-shadow: 0 12px 28px rgba(180, 190, 254, 0.35);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75), 0 18px 38px rgba(180, 190, 254, 0.45);
 }
 
 .btn-main svg {
+  position: relative;
+  z-index: 1;
   width: 34px;
   height: 34px;
 }
 
+.btn-main_sheen {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 255, 255, 0.55),
+    transparent 25%,
+    transparent 65%,
+    rgba(255, 255, 255, 0.55)
+  );
+  mix-blend-mode: overlay;
+  animation: liquid-spin 9s linear infinite;
+}
+
+@keyframes liquid-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-main_sheen { animation: none; }
+}
+
 .btn-primary {
-  background-color: #b4befe;
-  color: #11111b;
+  background: linear-gradient(160deg, rgba(180, 190, 254, 0.95), rgba(203, 166, 247, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #14141f;
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 600;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 8px 18px rgba(180, 190, 254, 0.3);
 }
 
 .btn-primary:hover {
-  background-color: #cba6f7;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 10px 22px rgba(203, 166, 247, 0.4);
 }
 
 .btn-secondary {
-  background-color: #313244;
-  color: #cdd6f4;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #eef0fb;
   padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 600;
 }
 
 .btn-secondary:hover {
-  background-color: #45475a;
+  background: rgba(255, 255, 255, 0.14);
 }
 
+/* ---------- Modals ---------- */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(6, 6, 12, 0.55);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  box-sizing: border-box;
 }
 
 .modal {
-  background-color: #1e1e2e;
+  position: relative;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 65%);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
   padding: 2rem;
-  border-radius: 24px;
-  border: 1px solid #313244;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 30px 60px -15px rgba(0, 0, 0, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+}
+
+.modal::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 140%;
+  height: 90%;
+  background: radial-gradient(ellipse at top left, rgba(255, 255, 255, 0.3), transparent 60%);
+  transform: rotate(-8deg);
+  pointer-events: none;
 }
 
 .modal h2 {
+  position: relative;
   margin: 0 0 1.5rem 0;
   font-size: 1.5rem;
-  color: #cdd6f4;
+  color: #f4f5fc;
 }
 
 .setting-item {
+  position: relative;
   margin-bottom: 1.5rem;
 }
 
 .setting-item label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #a6adc8;
+  color: #c3c8e6;
   font-size: 0.9rem;
 }
 
 .setting-input {
   width: 100%;
   padding: 0.75rem;
-  background-color: #181825;
-  border: 1px solid #313244;
-  border-radius: 12px;
-  color: #cdd6f4;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: #f4f5fc;
   font-size: 1rem;
   font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .setting-input:focus {
   outline: none;
   border-color: #b4befe;
+  box-shadow: 0 0 0 3px rgba(180, 190, 254, 0.25);
 }
 
 .modal-actions {
+  position: relative;
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
@@ -477,7 +685,8 @@ h1 {
 }
 
 .notification-modal p {
-  color: #a6adc8;
+  position: relative;
+  color: #c3c8e6;
   margin-bottom: 1.5rem;
   line-height: 1.5;
 }
